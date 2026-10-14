@@ -61,7 +61,7 @@ def clasificar_numero(token):
 
 def ver_pila(pila):
     # Muestra solo los simbolos
-    return [s for s, _ in pila]
+    return [s for s, _, _ in pila]
 
 def validar_expresion(expresion):
     print(f"Expresion: {expresion}")
@@ -78,7 +78,8 @@ def validar_expresion(expresion):
         pos += 1
         # Caso a: si es un parentesis que abre, simepre se mete a la pila
         if token in '([{':
-            pila.append((token, pos)) # Metemos el simbolo y su posicion en la pila
+            idx_actual = len(salida)
+            pila.append((token, pos, idx_actual)) # Metemos el simbolo y su posicion en la pila
             salida.append(f"{token} Parentesis que abre: {token} [se apila '{token}'] Pila: {ver_pila(pila)}")
 
         # Caso b si es un parentesis que cierra revisamos el tope de la pila
@@ -99,7 +100,7 @@ def validar_expresion(expresion):
 
             # Si si hay cosas en la pila, sacamos el ultimo que entro
             else:
-                tope_simbolo, tope_pos = pila.pop()
+                tope_simbolo, tope_pos, _ = pila.pop()
 
                 # El que sacamos de la pila coincide con el que cierra?
                 if tope_simbolo == abierto_esperado:
@@ -126,7 +127,11 @@ def validar_expresion(expresion):
 
     # Error 3: Terminamos de leer toda la expresion y quedaron parentesis abiertos en la pila?
     while len(pila) > 0:
-        simbolo_sin_cerrar, pos_sin_cerrar = pila.pop()
+        simbolo_sin_cerrar, pos_sin_cerrar, idx_abierto = pila.pop()
+        salida[idx_abierto] = salida[idx_abierto].replace(
+            f"Parentesis que abre: {simbolo_sin_cerrar}",
+            f"Parentesis que abre: {simbolo_sin_cerrar} (posible error)"
+        )
         errores.append(f"Error en posicion {pos_sin_cerrar}: '{simbolo_sin_cerrar}' se quedo abierto en la pila.")
 
     for linea in salida:
