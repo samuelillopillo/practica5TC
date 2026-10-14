@@ -71,12 +71,15 @@ def validar_expresion(expresion):
     pares = {')': '(', ']': '[', '}': '{'} #diccionario para saber quien cierra a quien
     errores = [] # Lista para anotar los errores
 
+    salida = [] # Guardamos los textos para marcar posibles errores previos
+    historial_cierres = {')': [], ']': [], '}': []} # Guarda en que linea de 'salida' se cerro cada simbolo
+
     for token, pos in tokens:
         pos += 1
         # Caso a: si es un parentesis que abre, simepre se mete a la pila
         if token in '([{':
             pila.append((token, pos)) # Metemos el simbolo y su posicion en la pila
-            print(f"{token} Parentesis que abre: {token} [se apila '{token}'] Pila: {ver_pila(pila)}")
+            salida.append(f"{token} Parentesis que abre: {token} [se apila '{token}'] Pila: {ver_pila(pila)}")
 
         # Caso b si es un parentesis que cierra revisamos el tope de la pila
         elif token in ')]}':
@@ -84,7 +87,14 @@ def validar_expresion(expresion):
 
             #Error 1. La pila esta vacia? (Cerro algo que nunca abrio)
             if len(pila) == 0:
-                print(f"{token} Parentesis que cierra {token} (posible error). Pila: {ver_pila(pila)}")
+                # Si ya habia cerrado este mismop simbolo tambienm lo marcamos como posible error
+                for idx_linea in historial_cierres[token]:
+                    if "(posible error)" not in salida[idx_linea]:
+                        salida[idx_linea] = salida[idx_linea].replace(
+                            f"Parentesis que cierra {token}",
+                            f"Parentesis que cierra {token} (posible error)"
+                        )
+                salida.append(f"{token} Parentesis que cierra {token} (posible error). Pila: {ver_pila(pila)}")
                 errores.append(f"Error en posicion {pos}: '{token}' no tiene parentesis que lo abra")
 
             # Si si hay cosas en la pila, sacamos el ultimo que entro
@@ -93,23 +103,25 @@ def validar_expresion(expresion):
 
                 # El que sacamos de la pila coincide con el que cierra?
                 if tope_simbolo == abierto_esperado:
-                    print(f"{token} Parentesis que cierra {token} [Se desapila '{tope_simbolo}'] Pila: {ver_pila(pila)}")
+                    idx_linea = len(salida)
+                    historial_cierres[token].append(idx_linea) # Recorremos esta linea por si mas adelante sobra otro igual
+                    salida.append(f"{token} Parentesis que cierra {token} [se desapila '{tope_simbolo}'] Pila: {ver_pila(pila)}")
                 else:
                     #Error 2 se cruzaron Ej. habia '(' en la pila pero llego ']'
-                    print(f"{token} Parentesis que cierra {tope_simbolo} (Posible error se desapila '{tope_simbolo}') Pila: {ver_pila(pila)}")
+                    salida.append(f"{token} Parentesis que cierra {tope_simbolo} (Posible error) [se desapila '{tope_simbolo}'] Pila: {ver_pila(pila)}")
                     errores.append(f"Error en posicion {pos}: llego '{token}' pero se esperaba cerrar '{tope_simbolo}' (abierto en pos {tope_pos}).")
 
         # Caso c: si es un operador (+,-,*,/)
         elif token in '+-/*':
-            print(f"{token} Simbolo")
+            salida.append(f"{token} Simbolo")
 
         # Caso d: si es un numero
         elif token[0].isdigit() or (token[0] in '+-' and len(token) > 1):
-            print(f"{token} {clasificar_numero(token)}")
+            salida.append(f"{token} {clasificar_numero(token)}")
 
         # Caso e: Cualkquier otro caracter invlido
         else:
-            print(f"{token} Caracter invalido (error)")
+            salida.append(f"{token} Caracter Invalido (error)")
             errores.append(f"Error en posicion {pos}: '{token}' es un caracter invalido.")
 
     # Error 3: Terminamos de leer toda la expresion y quedaron parentesis abiertos en la pila?
@@ -117,6 +129,8 @@ def validar_expresion(expresion):
         simbolo_sin_cerrar, pos_sin_cerrar = pila.pop()
         errores.append(f"Error en posicion {pos_sin_cerrar}: '{simbolo_sin_cerrar}' se quedo abierto en la pila.")
 
+    for linea in salida:
+        print(linea)
     # veredicto final
     if len(errores) == 0:
         print("El uso de parentesis es correcto")
